@@ -10,3 +10,176 @@ Requires-Dist: pyserial>=3.5
 Requires-Dist: numpy>=2.0
 Requires-Dist: matplotlib>=3.10
 Requires-Dist: pyusb>=1.3.0
+
+# RIGOL-data-acquisition
+Tools and notebooks to drive a Rigol DS1104-Z-PLUS Oscilloscope and the Rigol DG1022 function generator.
+
+> Author : vass  
+> Special thanks to [valatras](https://github.com/Valatras)
+
+## Contents
+- `lab/RIGOL_data_acquisition.ipynb`: Connection workflow and basic scope/gen operations.
+- `LM741/lm741.ipynb`: LM741 characterization (GBW, Bode, slew rate, rise time & overshoot, output swing with binary-search clipping detection, offset). WIP: CMRR, PSRR, Ib, Ios.
+- `Rigol/`: Classes and helpers (`detect_rigol_instruments`, etc.).
+
+
+## Requirements
+- OS: Linux (Fedora tested). 
+- Windows may need tweaks (see class and function in `Rigol/RIGOL.py`).
+- Python: 3.14 + venv (see Setup and Debug).
+- Hardware: Rigol DS1104Z-Plus, Rigol DG1022 (or similar).
+
+
+## Lab tests : 
+_in `/lab/RIGOL_data_acquisition.ipynb`_
+
+- Workflow/tutorial to connect and verify scope/gen comms
+- Basic operations: set waveforms, triggers, captures
+- Quick sanity checks before running characterization notebooks
+
+## LM741 characterization :
+_in `/LM741/lm741.ipynb`_
+
+Full verification workflow of LM741 key datasheet values :
+- Gain-Bandwidth Product
+- Bode diagram
+- Slew rate
+- Rise Time & Overshoot
+- clipping of Output Voltage Swing (binary search detection)
+- Offset Voltage
+
+(WIP:)
+- CMRR
+- PSSR
+- Input Bias Current (Ib) 
+- Input Offset Current (Ios)
+
+---
+Note : 
+- Uses the `Rigol/` definitions and classes; ensure the pyproject.toml package is installed (e.g., `pip install -e .` in your venv).
+
+
+## Setup & Debug
+
+
+
+### Linux (Fedora):
+1. Create the new venv :
+> python -m venv HTP_venv
+
+2. Activate the venv and install dependencies :
+```
+>>> source HTP_venv/bin/activate
+>>> pip install -r requirements.txt
+```
+
+3. Register our venv as a Jupyter kernel:
+```
+>>> python -m ipykernel install --user --name=HTP_venv --display-name="Python (HTP_venv)"
+>>> jupyter kernelspec list
+```
+(should show) : htp_venv         
+...\jupyter\kernels\htp_venv
+
+#### Pyproject.toml
+
+1. Activate the created venv
+2. Install all its requirements
+> pip install e .
+
+
+
+#### Debug :
+First check to see if pyvisa is well installed and can at least read ASRL (fictive serial ports).
+
+Then we'll try making it read physical USB ports.
+
+```
+import pyvisa
+rm = pyvisa.ResourceManager('@py')
+print(rm.list_resources())
+print(rm)
+```
+
+If Rigol devices are not detected (linux), use : 
+> lsusb
+
+This should show :
+```
+Bus 001 Device 120: ID 1ab1:0588 Rigol Technologies DS1000 SERIES
+Bus 001 Device 121: ID 1ab1:04ce Rigol Technologies DS1xx4Z/MSO1xxZ series
+```
+
+.
+
+Create `udev` rules in the following file : 
+>sudo nano /etc/udev/rules.d/99-usbtmc-rigol.rules
+
+Write : 
+SUBSYSTEM=="usb", ATTR{idVendor}=="1ab1", ATTR{idProduct}=="0588", MODE="0666"
+SUBSYSTEM=="usb", ATTR{idVendor}=="1ab1", ATTR{idProduct}=="04ce", MODE="0666"
+SUBSYSTEM=="usb", ATTR{idVendor}=="0400", ATTR{idProduct}=="09c4", MODE="0666"
+
+
+.
+
+Verify:
+>vass@NightBlue:~$ cat /etc/udev/rules.d/99-usbtmc-rigol.rules
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="1ab1", ATTR{idProduct}=="0588", MODE="0666"
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="1ab1", ATTR{idProduct}=="04ce", MODE="0666"
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="0400", ATTR{idProduct}=="09c4", MODE="0666"
+
+
+.
+
+Recharge :
+> sudo udevadm control --reload-rules
+
+> sudo udevadm trigger
+
+Check if usbtmc is loaded :
+> lsmod | grep usbtmc
+
+
+---
+---
+
+### Windows (Old, might not work)
+
+Install Ni-Visa.
+
+1. Create a new -venv :
+> python -m venv HTP_venv
+
+2. Activate the venv and install dependencies :
+```
+>>> .\HTP_venv\Scripts\Activate.ps1
+>>> pip install -r requirements.txt
+```
+
+3. Register our venv as a Jupyter kernel:
+```
+>>> python -m ipykernel install --user --name=HTP_venv --display-name="Python (HTP_venv)"
+>>> jupyter kernelspec list
+```
+(should show) : htp_venv         C:\Users\user\AppData\Roaming\jupyter\kernels\htp_venv
+
+#### Drivers (Windows 10):
+
+DG1022 : 
+- Goto https://www.rigolna.com/download/ 
+- Filter by DG1000 in the search bar.
+- then Download > UltraSigma Instrument Connectivity Driver
+
+
+If Rigol devices are not detected, use : 
+- Device Manager (Windows)
+
+
+
+
+
+
