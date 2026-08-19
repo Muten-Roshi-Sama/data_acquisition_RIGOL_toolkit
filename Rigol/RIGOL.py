@@ -63,6 +63,10 @@ class RigolInstrument:
             time.sleep(0.05)
             self.write(f'PHAS {phase} ')
             time.sleep(0.05)
+            # APPLy:SQUare always resets duty cycle to 50%, so it must be set after
+            if waveform_type.upper().startswith("SQU"):
+                self.write(f'FUNC:SQU:DCYC {duty_cycle}')
+                time.sleep(0.05)
             self.write("OUTP1 ON")
             # self.toggle("CH1", "ON", self)
 
@@ -74,6 +78,9 @@ class RigolInstrument:
             time.sleep(0.05)
             self.write(f'PHAS:{channel} {phase} ')
             time.sleep(0.05)
+            if waveform_type.upper().startswith("SQU"):
+                self.write(f'FUNC:SQU:DCYC:{channel} {duty_cycle}')
+                time.sleep(0.05)
             self.write('OUTP:CH2 ON ')
             # self.toggle(f"CH2", "ON", self)
 
